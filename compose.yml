@@ -1,0 +1,46 @@
+version: "3"
+services:
+  db:
+    image: mysql:9.1
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+  api:
+    build: ./api
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec puma -C config/puma.rb"
+    volumes:
+      - ./api:/myapp
+      - public-data:/myapp/public
+      - tmp-data:/myapp/tmp
+    depends_on:
+      - db
+
+  front:
+    build: ./front
+    command: npm run dev
+    ports:
+      - 5173:5173
+    volumes:
+      - ./front:/myapp
+    depends_on:
+      - api
+
+  web:
+    build: ./nginx
+    volumes:
+      - ./nginx:/etc/nginx
+      - public-data:/myapp/public
+      - tmp-data:/myapp/tmp
+    ports:
+      - 80:80
+    depends_on:
+      - api
+
+volumes:
+  mysql-data:
+  public-data:
+  tmp-data:
